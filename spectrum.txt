@@ -1,0 +1,125 @@
+const vec4 CIEX0 = vec4(0.26714125, 0.173056848724526, -0.0517890668554628, 0.369341509681465);
+const vec4 CIEX1 = vec4(0.0, 0.510852785928701, 0.636521548441552, -0.324530476950362);
+const vec4 CIEX2 = vec4(1.0622, 0.547302197035226, 0.0899535691555178, 1.10399973088081);
+
+const vec4 CIEY0 = vec4(0.2671425, 0.86798560108836, 0.150307921271593, -0.354744089805774);
+const vec4 CIEY1 = vec4(0, 0.10539332389757, 0.168752691961971, -0.289650515359526);
+const vec4 CIEY2 = vec4(1.0002, 0.445956775505726, 0.0920541376951253, 0.814888040084084);
+
+const vec4 CIEZ0 = vec4(0.26714375, 0.174251742295476, -0.0569218355789753, 1.72408897831517);
+const vec4 CIEZ1 = vec4(0.0, 0.0542544622978704, 0.0457454482464726, -0.442679263574661);
+const vec4 CIEZ2 = vec4(1.7826, 0.711309229610584, 0.285040831286585, -0.407629686738774);
+
+const float White = 1.0;
+
+const vec4 Cyan0 = vec4(0.0, 0.424537460743542, 0.0866503554583976, 0.560757618949125);
+const vec4 Cyan1 = vec4(0.0, 0.246400896854156, 0.0795161416808855, 0.216116362841135);
+const vec4 Cyan2 = vec4(1.0, 0.067666394964209, 0.2698588575757230, 0.890716186803857);
+
+const vec4 Magenta0 = vec4(0.0, 0.092393363155047, -0.030670840714796, 0.425200104381996);
+const vec4 Magenta1 = vec4(0.0, 0.174734179228986, 0.0690508593874629, 0.983929883263911);
+const vec4 Magenta2 = vec4(1.0, 0.613995338323662, 0.0794711389383399, 1.003105061865860);
+
+const vec4 Yellow0 = vec4(0.0, 0.369673263739623, -0.071355497310236, 0.503666150930812);
+const vec4 Yellow1 = vec4(0.0, 0.558410218684172,  0.151858057162275, 0.878349029651678);
+const vec4 Yellow2 = vec4(1.0, 0.587945864428471,  0.101005427723483, 0.109960421083442);
+
+const vec4 Red0 = vec4(0.0, 0.574803873802654,  0.0349961565910619, 0.670478585641923);
+const vec4 Red1 = vec4(0.0, 0.042753652345675, -0.076576978780864,  0.070884754752968);
+const vec4 Red2 = vec4(1.0, 0.669048230499984,  0.0587027396330119, 0.957999219817480);
+
+const vec4 Green0 = vec4(0.0, 0.305242141596798,  0.0337596436768638, 0.424248514020785);
+const vec4 Green1 = vec4(0.0, 0.476992126451749, -0.0541085157876399, 0.815789194891182);
+const vec4 Green2 = vec4(1.0, 0.365833471799225, -0.0583175076362409, 0.792406519710127);
+
+const vec4 Blue0 = vec4(0.0, 0.144760614900738, 0.0848347582999023, 0.993361426917213);
+const vec4 Blue1 = vec4(0.0, 0.600421286424602, -0.060880809655396, 0.0744873773945442);
+const vec4 Blue2 = vec4(1.0, 0.231505955455338, -0.029894351908322, 0.339396172335299);
+
+
+
+float Gaussian(const float x0, const float s, const float w, const float x)
+{
+	return w * exp( -(x - x0) * (x - x0) / (2.0 * s * s + 1.0e-20) );
+}
+
+
+
+float GaussianMixture(const float lambda, const vec4 Data0, const vec4 Data1, const vec4 Data2)
+{
+	float t = (lambda - 0.380) / (0.780 - 0.380);
+	float g0 = Gaussian(Data0.y, Data0.z, Data0.w, t);
+	float g1 = Gaussian(Data1.y, Data1.z, Data1.w, t);
+	float g2 = Gaussian(Data2.y, Data2.z, Data2.w, t);
+
+	return min(max(g0 + g1 + g2 + Data0.x, Data1.x), Data2.x);
+}
+
+
+
+// returns the power at wavelength = lambda, given RGB values
+float RGB2Spectrum(const vec3 rgb, const float lambda)
+{
+	// assume that RGB values are in [0, 1]
+	float r2g = rgb.r - rgb.g;
+	float g2b = rgb.g - rgb.b;
+	float b2r = rgb.b - rgb.r;
+
+	if ((rgb.r <= rgb.g) && (rgb.r <= rgb.b)) 
+	{
+		if (rgb.g <= rgb.b)
+		{
+			return rgb.r * White - (r2g * GaussianMixture(lambda, Cyan0, Cyan1, Cyan2) + g2b * GaussianMixture(lambda, Blue0, Blue1, Blue2)); 
+		}
+		else
+		{
+			return rgb.r * White + (b2r * GaussianMixture(lambda, Cyan0, Cyan1, Cyan2) + g2b * GaussianMixture(lambda, Green0, Green1, Green2));
+		}
+	}
+	else if ((rgb.g <= rgb.r) && (rgb.g <= rgb.b)) 
+	{
+		if (rgb.b <= rgb.r)
+		{
+			return rgb.g * White - (g2b * GaussianMixture(lambda, Magenta0, Magenta1, Magenta2) + b2r * GaussianMixture(lambda, Red0, Red1, Red2)); 
+		}
+		else
+		{
+			return rgb.g * White + (r2g * GaussianMixture(lambda, Magenta0, Magenta1, Magenta2) + b2r * GaussianMixture(lambda, Blue0, Blue1, Blue2));
+		}
+	}
+	else 
+	{
+		if (rgb.r <= rgb.g)
+		{
+			return rgb.b * White - (b2r * GaussianMixture(lambda, Yellow0, Yellow1, Yellow2) + r2g * GaussianMixture(lambda, Green0, Green1, Green2));
+		}
+		else
+		{
+			return rgb.b * White + (g2b * GaussianMixture(lambda, Yellow0, Yellow1, Yellow2) + r2g *GaussianMixture(lambda, Red0, Red1, Red2));
+		}
+	}
+}
+
+
+
+// returns RGB scaling factor for the spectrum power = 1.0, given wavelength = lambda
+vec3 Spectrum2RGB(const float lambda)
+{
+	float x = GaussianMixture(lambda, CIEX0, CIEX1, CIEX2);
+	float y = GaussianMixture(lambda, CIEY0, CIEY1, CIEY2);
+	float z = GaussianMixture(lambda, CIEZ0, CIEZ1, CIEZ2);
+
+	// E to D65
+	// 0.26713798 is for mapping spectrum 1.0 into rgb (1.0, 1.0, 1.0)
+	x = x * 0.9504700 / 0.26713798;
+	y = y * 1.0000000 / 0.26713798;
+	z = z * 1.0888300 / 0.26713798;
+
+	// sRGB (D65)
+	vec3 rgb;
+	rgb.r = (x * ( 3.2404542) + y * (-1.5371385) + z * (-0.4985314));
+	rgb.g = (x * (-0.9692660) + y * ( 1.8760108) + z * ( 0.0415560));
+	rgb.b = (x * ( 0.0556434) + y * (-0.2040259) + z * ( 1.0572252));
+
+	return rgb;
+}
