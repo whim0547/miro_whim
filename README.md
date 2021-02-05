@@ -29,6 +29,7 @@
 - PinholeカメラからLensカメラにも対応
   - Camera.cpp
   - <img src="https://user-images.githubusercontent.com/42861828/106978490-b7708e00-679f-11eb-98b9-4d181a1af3b6.png" width="20%">  
+  - (２つ上の画像より口などが少しぼやけているのがわかる)
 
   
 - Path Tracing対応
